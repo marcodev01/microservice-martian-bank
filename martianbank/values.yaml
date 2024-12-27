@@ -109,7 +109,7 @@ mongodb:
   enabled: false
 
 SERVICE_PROTOCOL: "http"
-DB_URL:  
+DB_URL: "mongodb://127.0.0.1:27017" 
 
 #######################################################################################
 ## Deploy locust

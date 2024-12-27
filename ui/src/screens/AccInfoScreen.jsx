@@ -122,7 +122,7 @@ const AccInfoScreen = () => {
               >
                 <option value="">Select your govt. ID</option>
                 <option value="Passport">Passport</option>
-                <option value="Driver License">Driver's License</option>
+                <option value="Driver License">Driver&apos;s License</option>
                 <option value="Aadhar Card">SSN</option>
               </Form.Select>
             </Form.Group>

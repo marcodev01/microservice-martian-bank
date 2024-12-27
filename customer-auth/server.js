@@ -18,12 +18,12 @@ import { swaggerDocs } from './utils/swagger.js';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 
 import userRoutes from './routes/userRoutes.js';
+import connectDB from './config/db.js';
 
 // Load environment variables from .env file
 dotenv.config();
 
 // connect to MongoDB Atlas database
-import connectDB from './config/db.js';
 connectDB();
 
 const port = process.env.PORT || 8000;
@@ -32,7 +32,7 @@ const app = express();
 // mounting middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors({credentials: true, origin: true}));
+app.use(cors({ credentials: true, origin: true }));
 app.use(cookieParser());
 app.use(morgan('dev'));
 

@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
-import { divIcon } from "leaflet";
+import L, { divIcon } from "leaflet";
 import { useDispatch } from "react-redux";
 import {
   useGetAtmsMutation,

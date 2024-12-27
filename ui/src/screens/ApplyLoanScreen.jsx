@@ -283,7 +283,7 @@ const ApplyLoan = () => {
                 >
                   <option value="">Select your ID type</option>
                   <option value="Passport">Passport</option>
-                  <option value="DriverLicense">Driver's License</option>
+                  <option value="DriverLicense">Driver&#39;s License</option>
                   <option value="AadharCard">SSN</option>
                 </Form.Select>
               </Form.Group>
