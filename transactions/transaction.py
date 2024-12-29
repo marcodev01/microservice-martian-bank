@@ -30,6 +30,8 @@ import logging
 
 # set logging to debug
 logging.basicConfig(level=logging.DEBUG)
+# Suppress pymongo DEBUG logs
+logging.getLogger('pymongo').setLevel(logging.WARNING)
 
 from pymongo.mongo_client import MongoClient
 
