@@ -32,6 +32,7 @@ message CreateAccountResponse {
 
 message GetAccountsRequest {
   string email_id = 1;
+  string account_number = 2; // (Optional)
 }
 
 message GetAccountsResponse {
@@ -52,6 +53,16 @@ message GetAccountDetailRequest {
   string account_number = 1;
 }
 
+message UpdateBalanceRequest {
+  string account_number = 1;        
+  double new_balance = 2;           
+}
+
+
+message UpdateBalanceResponse {
+  bool success = 1;                
+}
+
 
 
 // message GetAccountDetailResponse {
@@ -66,6 +77,7 @@ service AccountDetailsService {
   rpc getAccountDetails(GetAccountDetailRequest) returns (AccountDetail);
   rpc createAccount(CreateAccountRequest) returns (CreateAccountResponse);
   rpc getAccounts(GetAccountsRequest) returns (GetAccountsResponse);
+  rpc updateBalance(UpdateBalanceRequest) returns (UpdateBalanceResponse);
 }
 
 

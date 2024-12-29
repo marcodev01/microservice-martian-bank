@@ -7,11 +7,14 @@ import random
 import datetime
 import os
 import grpc
+import requests
 
 import logging
 from flask import Flask, request, jsonify
 # set logging to debug
 logging.basicConfig(level=logging.DEBUG)
+# Suppress pymongo DEBUG logs
+logging.getLogger('pymongo').setLevel(logging.WARNING)
 
 
 from loan_pb2 import *
@@ -42,8 +45,11 @@ logging.debug(f"microservice protocol: {protocol}")
 
 client = MongoClient(uri)
 db = client["bank"]
-collection_accounts = db["accounts"]
 collection_loans = db["loans"]
+
+ACCOUNTS_SERVICE_URL = os.getenv("ACCOUNTS_SERVICE_URL")
+if not ACCOUNTS_SERVICE_URL:
+    raise Exception("ACCOUNTS_SERVICE_URL environment variable is not set")
 
 class LoanGeneric:
     def ProcessLoanRequest(self, request_data):
@@ -59,8 +65,33 @@ class LoanGeneric:
         time_period = request_data["time_period"]
         user_account = self.__getAccount(account_number)
         
-        # count = collection_loans.count_documents({"email_id": email, 'account_number': account_number})
-        count =  collection_accounts.count_documents({"email_id": email, 'account_number': account_number})
+        try:
+            # Prepare payload for Accounts API
+            payload = {
+            "email_id": email,
+            "account_number": account_number
+            }
+            logging.debug(f"Sending POST request to Accounts Service with payload: {payload}")
+    
+            # Send POST request to Accounts API
+            response = requests.post(f"{ACCOUNTS_SERVICE_URL}/get-all-accounts", json=payload, timeout=5)
+    
+            # Check HTTP status code
+            if response.status_code != 200:
+                logging.error(f"Error in request to Accounts Service: {response.status_code} - {response.text}")
+                return {"approved": False, "message": "Error communicating with Accounts Service."}
+    
+            # Process response
+            accounts = response.json()
+            count = len(accounts)
+            logging.debug(f"Number of accounts found: {count}")
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Exception during communication with Accounts Service: {e}")
+            return {"approved": False, "message": "Error communicating with Accounts Service."}
+        except ValueError as e:
+            logging.error(f"Error parsing JSON response: {e}")
+            return {"approved": False, "message": "Invalid response from Accounts Service."}
+
 
         logging.debug(f"user account only based on account number search : {user_account}")
         logging.debug(f"Count whther the email and account exist or not : {count}")
@@ -120,27 +151,77 @@ class LoanGeneric:
         return loan_history
 
     def __getAccount(self, account_num):
-        r = None
-        accounts = collection_accounts.find()
-        for acc in accounts:
-            if acc["account_number"] == account_num:
-                r = acc
-                break
-        # logging.debug(f"Account {r}")
-        return r
+        try:
+            # Prepare payload for Accounts API
+            payload = {
+                "account_number": account_num
+            }
+            logging.debug(f"Sending POST request to Accounts Service to get account details: {payload}")
+
+            # Send POST request to Accounts Service's /account-detail endpoint
+            response = requests.post(f"{ACCOUNTS_SERVICE_URL}/account-detail", json=payload, timeout=5)
+
+            # Check HTTP status code
+            if response.status_code != 200:
+                logging.error(f"Error in request to Accounts Service: {response.status_code} - {response.text}")
+                return None
+
+            # Process response
+            account = response.json()
+            if account:
+                logging.debug(f"Account details retrieved: {account}")
+                return account
+            else:
+                logging.debug("No account found with the provided account number.")
+                return None
+
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Exception during communication with Accounts Service: {e}")
+            return None
+        except ValueError as e:
+            logging.error(f"Error parsing JSON response: {e}")
+            return None
+
 
     def __approveLoan(self, account, amount):
         if amount < 1:
+            logging.debug("Loan amount less than minimum required.")
             return False
 
-        account["balance"] += amount
+        new_balance = account["balance"] + amount
 
-        collection_accounts.update_one(
-            {"account_number": account["account_number"]},
-            {"$set": {"balance": account["balance"]}},
-        )
+        # Prepare payload for updating balance
+        payload = {
+            "account_number": account["account_number"],
+            "new_balance": new_balance
+        }
 
-        return True
+        try:
+            logging.debug(f"Sending POST request to Accounts Service to update balance: {payload}")
+
+            # Send POST request to Accounts Service's /update-balance endpoint
+            response = requests.post(f"{ACCOUNTS_SERVICE_URL}/update-balance", json=payload, timeout=5)
+
+            # Check HTTP status code
+            if response.status_code == 200:
+                result = response.json()
+                if result.get("success"):
+                    logging.debug("Balance updated successfully via Accounts Service.")
+                    return True
+                else:
+                    logging.error("Failed to update balance via Accounts Service.")
+                    return False
+            else:
+                logging.error(f"Error updating balance via Accounts Service: {response.status_code} - {response.text}")
+                return False
+
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Exception during communication with Accounts Service: {e}")
+            return False
+        except ValueError as e:
+            logging.error(f"Error parsing JSON response: {e}")
+            return False
+
 
 class LoanService(loan_pb2_grpc.LoanServiceServicer):
     def __init__(self) -> None:
