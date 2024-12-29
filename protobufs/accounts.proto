@@ -16,7 +16,6 @@ message Account {
   double balance = 9;
 }
 
-
 message CreateAccountRequest {
   string email_id = 1;
   string account_type = 2;
@@ -32,17 +31,14 @@ message CreateAccountResponse {
 
 message GetAccountsRequest {
   string email_id = 1;
-  string account_number = 2; // (Optional)
+  string account_number = 2; // Optional
 }
 
 message GetAccountsResponse {
   repeated Account accounts = 1;
 }
 
-
-
-
-message AccountDetail{
+message AccountDetail {
   string account_number = 1;
   string name = 2;
   double balance = 3;
@@ -58,19 +54,24 @@ message UpdateBalanceRequest {
   double new_balance = 2;           
 }
 
-
 message UpdateBalanceResponse {
   bool success = 1;                
 }
 
+message GetAccountByEmailRequest {
+  string email_id = 1;
+  string account_type = 2; // Optional
+}
 
-
-// message GetAccountDetailResponse {
-//   AccountDetail account = 1;
-// }
-
-
-
+message GetAccountByEmailResponse {
+  string account_number = 1;
+  string name = 2;
+  double balance = 3;
+  string currency = 4;
+  string email_id = 5;
+  string account_type = 6;
+  bool found = 7;
+}
 
 
 service AccountDetailsService {
@@ -78,7 +79,5 @@ service AccountDetailsService {
   rpc createAccount(CreateAccountRequest) returns (CreateAccountResponse);
   rpc getAccounts(GetAccountsRequest) returns (GetAccountsResponse);
   rpc updateBalance(UpdateBalanceRequest) returns (UpdateBalanceResponse);
+  rpc GetAccountByEmail(GetAccountByEmailRequest) returns (GetAccountByEmailResponse);
 }
-
-
-

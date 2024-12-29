@@ -13,6 +13,8 @@ import logging
 from dotmap import DotMap
 from pymongo.mongo_client import MongoClient
 from flask import Flask, request, jsonify
+import requests
+
 # set logging to debug
 logging.basicConfig(level=logging.DEBUG)
 # Suppress pymongo DEBUG logs
@@ -56,7 +58,9 @@ class AccountsGeneric:
                 'account_number': account["account_number"],
                 'name': account["name"],
                 'balance': account["balance"],
-                'currency': account["currency"]
+                'currency': account["currency"],
+                'email_id': account["email_id"],
+                'account_type': account["account_type"]
             }
 
         return {}
@@ -160,6 +164,8 @@ class AccountDetailsService(accounts_pb2_grpc.AccountDetailsServiceServicer):
                 name=account["name"],
                 balance=account["balance"],
                 currency=account["currency"],
+                email_id=account["email_id"],
+                account_type=account["account_type"]
             )
         return AccountDetail()
 
@@ -216,6 +222,30 @@ def getAccounts():
     data = DotMap(data)
     accounts = accounts_generic.getAccounts(data)
     return jsonify(accounts)
+
+@app.route("/get-account-by-email", methods=["POST"])
+def getAccountByEmail():
+    logging.debug("Get Account By Email API called")
+    data = request.json
+    data = DotMap(data)
+    email_id = data.email_id
+    account_type = getattr(data, 'account_type', None)  # Optional
+
+    query = {"email_id": email_id}
+    if account_type:
+        query["account_type"] = account_type
+
+    account = collection.find_one(query)
+    if account:
+        return jsonify({
+            'account_number': account["account_number"],
+            'name': account["name"],
+            'balance': account["balance"],
+            'currency': account["currency"],
+            'email_id': account["email_id"],
+            'account_type': account["account_type"]
+        })
+    return jsonify({}), 404
 
 # Note: this route is used only by loan service to update the balance
 @app.route("/update-balance", methods=["POST"])
