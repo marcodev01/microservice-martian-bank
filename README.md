@@ -415,7 +415,7 @@ git clone https://github.com/cisco-open/martian-bank-demo.git
 cd martian-bank-demo
 ```
 
-2. Install mongodb locally and run it. Follow the steps here: https://www.mongodb.com/docs/manual/installation/. Start locally mongodb: `sudo systemctl start mongod
+2. Install mongodb locally and run it. Follow the steps here: https://www.mongodb.com/docs/manual/installation/. Start locally mongodb: `sudo systemctl start mongod`
  / stop locally mongodb: `sudo systemctl stop mongod`. Inspect data use: MongoDBCompass Applicaiton See: https://www.mongodb.com/docs/manual/tutorial/install-mongodb-on-ubuntu/#run-mongodb-community-edition 
 
 3. Before you start with the MartianBank installation, ensure that you have `.env` files setup inside all the microservices. You need to create a `.env` file under these folders: `./customer-auth`, `./atm-locator`, `./dashboard`, `./accounts`, `./loan`, `./transactions`. Each `.env` file should look like this:
