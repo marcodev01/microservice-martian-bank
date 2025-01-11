@@ -13,29 +13,28 @@ from dotmap import DotMap
 
 # Configure the logging settings
 import logging
+import requests
 
 logging.basicConfig(
     level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 from transaction_pb2 import *
 import transaction_pb2_grpc
-from flask import Flask, request, jsonify
 
 from google.protobuf.json_format import MessageToDict
 
 from dotenv import load_dotenv
 load_dotenv()
 
-import logging
-
 # set logging to debug
 logging.basicConfig(level=logging.DEBUG)
+# Suppress pymongo DEBUG logs
+logging.getLogger('pymongo').setLevel(logging.WARNING)
 
 from pymongo.mongo_client import MongoClient
 
 
 # db_host = os.getenv("DATABASE_HOST", "localhost")
-
 db_url = os.getenv("DB_URL")
 if db_url is None:
     raise Exception("DB_URL environment variable is not set")                   
@@ -51,15 +50,19 @@ if protocol is None:
 protocol = protocol.lower()
 logging.debug(f"microservice protocol: {protocol}")
 
-
-
 client = MongoClient(uri)
 db = client["bank"]
-collection_accounts = db["accounts"]
 collection_transactions = db["transactions"]
 
+# Accounts Service URL
+ACCOUNTS_SERVICE_URL = os.getenv("ACCOUNTS_SERVICE_URL")
+if ACCOUNTS_SERVICE_URL is None:
+    raise Exception("ACCOUNTS_SERVICE_URL environment variable is not set")
 
 class TransactionGeneric:
+    def __init__(self):
+        self.accounts_service_url = ACCOUNTS_SERVICE_URL
+
     def SendMoney(self, request):
         sender_account = self.__getAccount(request.sender_account_number)
         receiver_account = self.__getAccount(request.receiver_account_number)
@@ -128,108 +131,96 @@ class TransactionGeneric:
         receiver_email = request.receiver_email
         amount = float(request.amount)
         reason = request.reason
-        sender_account = self.__getAccountwithEmail(sender_email)
-        receiver_account = self.__getAccountwithEmail(receiver_email)
+        sender_account = self.__getAccountByEmail(sender_email)
+        receiver_account = self.__getAccountByEmail(receiver_email)
 
         return self.__transfer(sender_account, receiver_account, amount, reason)
 
     def __transfer(self, sender_account, receiver_account, amount, reason):
         # if sender_account is not None or receiver_account is not None:
-
         if sender_account is None:
             return {"approved": False, "message": "Sender Account Not Found."}
 
         if receiver_account is None:
             return {"approved": False, "message": "Receiver Account Not Found."}
 
-
-        result = self.__doTransaction(
-            sender_account, receiver_account, amount, reason=reason
-        )
-        logging.debug(f"---> sender: {sender_account}")
-        logging.debug(f"--->receiver: {receiver_account}")
-        return result
-
-    def __doTransaction(self, sender, receiver, amount, reason=""):
-        if sender["balance"] < amount:
+        # Überprüfen des Saldos
+        if sender_account["balance"] < amount:
             return {"approved": False, "message": "Insufficient Balance"}
 
-        sender["balance"] -= amount
-        receiver["balance"] += amount
+        # Berechnung neuer Salden
+        new_sender_balance = sender_account["balance"] - amount
+        new_receiver_balance = receiver_account["balance"] + amount
 
-        # update sender account
-        collection_accounts.update_one(
-            {"account_number": sender["account_number"]},
-            {"$set": {"balance": sender["balance"]}},
-        )
+        # Aktualisieren der Salden über den Accounts Service
+        update_sender = self.__updateBalance(sender_account["account_number"], new_sender_balance)
+        if not update_sender:
+            return {"approved": False, "message": "Failed to update sender balance."}
 
-        # update receiver account
-        collection_accounts.update_one(
-            {"account_number": receiver["account_number"]},
-            {"$set": {"balance": receiver["balance"]}},
-        )
+        update_receiver = self.__updateBalance(receiver_account["account_number"], new_receiver_balance)
+        if not update_receiver:
+            # Rollback der Sender-Balance, falls Aktualisierung der Receiver-Balance fehlschlägt
+            self.__updateBalance(sender_account["account_number"], sender_account["balance"])
+            return {"approved": False, "message": "Failed to update receiver balance."}
 
-        # add transaction
+        # Hinzufügen der Transaktion zur Datenbank
+        self.__addTransaction(sender_account["account_number"], receiver_account["account_number"], amount, reason)
+
+        return {"approved": True, "message": "Transaction is Successful."}
+
+    def __updateBalance(self, account_number, new_balance):
+        url = f"{self.accounts_service_url}/update-balance"
+        payload = {
+            "account_number": account_number,
+            "new_balance": new_balance
+        }
+        try:
+            response = requests.post(url, json=payload)
+            return response.status_code == 200
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Failed to update balance for account {account_number}: {e}")
+            return False
+
+    def __addTransaction(self, sender, receiver, amount, reason):
         collection_transactions.insert_one(
             {
-                "sender": sender["account_number"],
-                "receiver": receiver["account_number"],
+                "sender": sender,
+                "receiver": receiver,
                 "amount": amount,
                 "reason": reason,
                 "time_stamp": datetime.datetime.now(),
             }
         )
 
-        return {"approved": True, "message": "Transaction is Successful."}
-
-    def __getAccountwithEmail(self, email):
-        logging.debug(f"Email: {email}")
-        # log the document with the email
-        logging.debug(
-            f"Document with email: {collection_accounts.count_documents({'email_id': email, 'account_type': 'Checking'})}"
-        )
-
-        document = None
-
-        if (
-            collection_accounts.count_documents(
-                {"email_id": email, "account_type": "Checking"}
-            )
-            == 1
-        ):
-            checking_account = collection_accounts.find(
-                {"email_id": email, "account_type": "Checking"}
-            )
-            document = checking_account[0]
-            logging.debug(f"Checking Account: {document}")
-            return document
-        else:
-            if (
-                collection_accounts.count_documents(
-                    {"email_id": email, "account_type": "Savings"}
-                )
-                == 1
-            ):
-                saving_account = collection_accounts.find(
-                    {"email_id": email, "account_type": "Savings"}
-                )
-                document = saving_account[0]
-                logging.debug(f"Savings Account: {document}")
-                return document
-            # logging.debug(f"Savings Account: {document}")
-        logging.debug("No Account Found")
-        return document
+    def __getAccountByEmail(self, email, account_type=None):
+        url = f"{self.accounts_service_url}/get-account-by-email"
+        payload = {"email_id": email}
+        if account_type:
+            payload["account_type"] = account_type
+        try:
+            response = requests.post(url, json=payload)
+            if response.status_code == 200:
+                return response.json()
+            else:
+                logging.debug(f"Account with email {email} not found.")
+                return None
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Failed to get account by email {email}: {e}")
+            return None
 
     def __getAccount(self, account_num):
-        r = None
-        accounts = collection_accounts.find()
-        # logging.debug(f"Accounts: {list(accounts)}")
-        for acc in accounts:
-            if acc["account_number"] == account_num:
-                r = acc
-                break
-        # logging.debug(f"Account {r}")
-        return r
+        url = f"{self.accounts_service_url}/account-detail"
+        payload = {"account_number": account_num}
+        try:
+            response = requests.post(url, json=payload)
+            if response.status_code == 200:
+                return response.json()
+            else:
+                logging.debug(f"Account with number {account_num} not found.")
+                return None
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Failed to get account {account_num}: {e}")
+            return None
 
 
 class TransactionService(transaction_pb2_grpc.TransactionServiceServicer):
@@ -279,10 +270,6 @@ class TransactionService(transaction_pb2_grpc.TransactionServiceServicer):
         return GetALLTransactionsResponse(transactions=transactions_list)
 
 
-
-
-
-
 app = Flask(__name__)
 transaction_generic = TransactionGeneric()
 
@@ -316,12 +303,9 @@ def getTransactionsHistory():
     result = transaction_generic.GetTransactionsHistory(data)
     return jsonify(result)
 
-
-
 def serverFlask(port):
     logging.debug(f"Starting Flask server on port {port}")
     app.run(host='0.0.0.0' ,port=port, debug=True)
-
 
 def serverGRPC(port):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
@@ -342,4 +326,3 @@ if __name__ == "__main__":
         serverGRPC(port)
     else:
         serverFlask(port)
-

@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# Copyright (c) 2023 Cisco Systems, Inc. and its affiliates
-# All rights reserved.
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
@@ -37,7 +35,7 @@ run_javascript_microservice() {
     
     # Open a new Windows Terminal tab and execute commands
     if command -v wt.exe &>/dev/null; then
-        wt.exe new-tab wsl bash -i -c "cd '$current_dir/$service_name' && npm install && npm run $service_alias"
+        wt.exe new-tab --title "$service_name" wsl bash -i -c "cd '$current_dir/$service_name' && npm install && npm run $service_alias"
     else
         echo "wt.exe not found. Please ensure Windows Terminal is installed."
         exit 1
@@ -58,7 +56,7 @@ run_python_microservice() {
     
     # Open a new Windows Terminal tab and execute commands
     if command -v wt.exe &>/dev/null; then
-        wt.exe new-tab wsl bash -i -c "cd '$current_dir/$service_name' && \
+        wt.exe new-tab --title "$service_name" wsl bash -i -c "cd '$current_dir/$service_name' && \
         rm -rf venv_bankapp && python3 -m venv venv_bankapp && \
         source venv_bankapp/bin/activate && \
         pip3 install -r requirements.txt && python3 '$service_alias.py'"

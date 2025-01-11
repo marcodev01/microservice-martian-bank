@@ -30,6 +30,8 @@ import requests as flask_client_requests
 
 # set logging to debug
 logging.basicConfig(level=logging.DEBUG)
+# Suppress pymongo DEBUG logs
+logging.getLogger('pymongo').setLevel(logging.WARNING)
 
 
 # db_host = os.getenv("DATABASE_HOST", "localhost")

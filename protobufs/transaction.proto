@@ -25,9 +25,9 @@ message GetALLTransactionsRequest{
 }
 
 message Transaction{
-  string account_number=1;
+  string account_number = 1;
   double amount = 2;
-  string reason=3;
+  string reason = 3;
   string time_stamp = 4;
   string type = 5;
   string transaction_id = 6;
@@ -37,18 +37,16 @@ message GetALLTransactionsResponse{
   repeated Transaction transactions = 1;
 }
 
-
 message ZelleRequest {
   string sender_email = 1;
   string receiver_email = 2;
   double amount = 3;
-  string reason= 4;
+  string reason = 4;
 }
 
 message TransactionByIDRequest{
   string transaction_id = 1;
 }
-
 
 service TransactionService {
   rpc sendMoney(TransactionRequest) returns (TransactionResponse);
