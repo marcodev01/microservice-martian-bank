@@ -94,7 +94,7 @@ class LoanGeneric:
 
 
         logging.debug(f"user account only based on account number search : {user_account}")
-        logging.debug(f"Count whther the email and account exist or not : {count}")
+        logging.debug(f"Count wether the email and account exist or not : {count}")
         if count == 0:
             return {"approved": False, "message": "Email or Account number not found."}
         result = self.__approveLoan(user_account, loan_amount)
