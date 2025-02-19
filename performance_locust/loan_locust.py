@@ -10,11 +10,11 @@ from faker import Faker
 fake = Faker()
 
 
-class MyUser(HttpUser):
+class LoanUser(HttpUser):
     host = ApiUrls["VITE_LOAN_URL"]
 
     @task
-    class MyUserTasks(SequentialTaskSet):
+    class LoanUserTasks(SequentialTaskSet):
         wait_time = between(2, 3)
 
         def on_start(self):
@@ -48,7 +48,7 @@ class MyUser(HttpUser):
             )
             self.account_number = response.json()["response"][0]["account_number"]
 
-        @task
+        @task(1)
         def apply(self):
             self.user_data["email"] = self.user_data["email_id"]
             self.user_data["govt_id_type"] = self.user_data["government_id_type"]
@@ -65,7 +65,7 @@ class MyUser(HttpUser):
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
 
-        @task
+        @task(2)
         def history(self):
             self.client.post(
                 "/history",

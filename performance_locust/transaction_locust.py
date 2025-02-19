@@ -6,17 +6,15 @@ from locust import HttpUser, task, SequentialTaskSet, between
 from api_urls import ApiUrls
 import random
 from faker import Faker
-import time
-import json
 
 fake = Faker()
 
 
-class MyUser(HttpUser):
+class TransactionUser(HttpUser):
     host = ApiUrls["VITE_TRANSFER_URL"]
 
     @task
-    class MyUserTasks(SequentialTaskSet):
+    class TransactionUserTasks(SequentialTaskSet):
         wait_time = between(2, 3)
 
         def on_start(self):
@@ -79,7 +77,7 @@ class MyUser(HttpUser):
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
 
-        @task
+        @task(1)
         def internal_transfer(self):
             self.client.post(
                 f"/",
@@ -92,7 +90,7 @@ class MyUser(HttpUser):
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
 
-        @task
+        @task(1)
         def external_transfer(self):
             self.client.post(
                 f"/zelle/",
@@ -105,7 +103,7 @@ class MyUser(HttpUser):
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
 
-        @task
+        @task(3)
         def transaction_history(self):
             self.client.post(
                 f"/history",

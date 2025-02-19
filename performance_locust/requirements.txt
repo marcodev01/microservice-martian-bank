@@ -1,2 +1,3 @@
 Faker
 locust
+python-dotenv

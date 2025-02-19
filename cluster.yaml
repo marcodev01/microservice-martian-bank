@@ -1,0 +1,24 @@
+apiVersion: eksctl.io/v1alpha5 
+kind: ClusterConfig 
+metadata: 
+  name: martianbank-cluster 
+  region: eu-central-1 
+vpc: 
+  cidr: "172.20.0.0/16" 
+  nat: 
+   gateway: Single 
+  clusterEndpoints: 
+   publicAccess: true 
+   privateAccess: false 
+nodeGroups: 
+  - name: ng-1 
+    minSize: 2 
+    maxSize: 2 
+    instancesDistribution: 
+      maxPrice: 0.050 
+      instanceTypes: ["t3a.medium", "t3.medium", "t4g.medium"] 
+      onDemandBaseCapacity: 0 
+      onDemandPercentageAboveBaseCapacity: 20 
+      spotInstancePools: 3 
+    ssh: 
+     publicKeyPath: ~/.ssh/id_ed25519.pub 
