@@ -12,8 +12,9 @@ vpc:
    privateAccess: false 
 nodeGroups: 
   - name: ng-1 
-    minSize: 2 
-    maxSize: 2 
+    minSize: 1 
+    maxSize: 1 
+    desiredCapacity: 1
     instancesDistribution: 
       maxPrice: 0.050 
       instanceTypes: ["t3a.medium", "t3.medium", "t4g.medium"] 

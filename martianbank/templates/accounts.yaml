@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: accounts
-          image: ghcr.io/cisco-open/martian-bank-demo-accounts
+          image: docker.io/dockerdev101/martian-bank-demo-accounts
           envFrom:
             - configMapRef:
                 name: configmap-martianbank
