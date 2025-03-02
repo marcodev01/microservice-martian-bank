@@ -6,6 +6,7 @@ from locust import HttpUser, task, SequentialTaskSet, between
 from api_urls import ApiUrls
 import random
 from faker import Faker
+import logging
 
 fake = Faker()
 
@@ -35,14 +36,14 @@ class LoanUser(HttpUser):
 
             # Create a new account
             self.client.post(
-                f"{account_host}/create",
+                f"{account_host}/accountcreate",
                 data=self.user_data,
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
 
             # Get all accounts
             response = self.client.post(
-                f"{account_host}/allaccounts",
+                f"{account_host}/accountallaccounts",
                 data={"email_id": self.user_data["email_id"]},
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
@@ -60,7 +61,7 @@ class LoanUser(HttpUser):
                 ["Base Camp", "Rover", "Potato Farming", "Ice Home", "Rocker"]
             )
             self.client.post(
-                "/",
+                "/loan",
                 data=self.user_data,
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
@@ -68,7 +69,7 @@ class LoanUser(HttpUser):
         @task(2)
         def history(self):
             self.client.post(
-                "/history",
+                "/loanhistory",
                 data={"email": self.user_data["email_id"]},
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )

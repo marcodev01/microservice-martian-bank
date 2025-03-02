@@ -40,23 +40,15 @@ class AccountUser(HttpUser):
                 # Update the account type and create the account
                 self.user_data["account_type"] = selected_type
                 self.client.post(
-                    "/create",
+                    "/accountcreate",
                     data=self.user_data,
                     headers={"Content-Type": "application/x-www-form-urlencoded"},
                 )
         
-        @task(3)
+        @task
         def get_all_accounts(self):
             self.client.post(
-                "/allaccounts",
+                "/accountallaccounts",
                 data={"email_id": self.user_data["email_id"]},
-                headers={"Content-Type": "application/x-www-form-urlencoded"},
-            )
-        
-        @task(2)
-        def get_particular_account(self):
-            self.client.get(
-                "/detail",
-                data={"email": self.user_data["email_id"]},
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
