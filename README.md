@@ -1,5 +1,11 @@
 # MARTIAN BANK
 
+A fork of the MartianBank demo microservices application used as a reference project in the master's thesis "Architecture as Code for Modern Cloud Applications." The application is used in its original state except for minor adaptations: the transactions and loans services no longer access the accounts DB collection directly to maintain a clear separation of concerns. Instead, new endpoints in the accounts service handle all account updates and reads.
+
+Locust performance test results are stored in ``performance_locust/results```.
+
+***
+
 <br />
  
 MartianBank is a microservices demo application that simulates an app to allow customers to access and manage their bank accounts, perform financial transactions, locate ATMs, and apply for loans. It is built using [React](https://react.dev/),[ Node.js](https://nodejs.org/en/about), [Python](https://flask.palletsprojects.com/en/2.3.x/) and is packaged in [Docker](https://www.docker.com/) containers.  

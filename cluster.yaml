@@ -22,4 +22,4 @@ nodeGroups:
       onDemandPercentageAboveBaseCapacity: 20 
       spotInstancePools: 3 
     ssh: 
-     publicKeyPath: ~/.ssh/id_ed25519.pub 
+     publicKeyPath: <PUBLIC_KEY_PATH>
