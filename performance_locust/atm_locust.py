@@ -6,11 +6,11 @@ from locust import HttpUser, task, SequentialTaskSet, between
 from api_urls import ApiUrls
 
 
-class MyUser(HttpUser):
+class AtmUser(HttpUser):
     host = ApiUrls["VITE_ATM_URL"]
 
     @task
-    class MyUserTasks(SequentialTaskSet):
+    class AtmUserTasks(SequentialTaskSet):
         wait_time = between(2, 3)
 
         @task

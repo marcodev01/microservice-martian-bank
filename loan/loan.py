@@ -73,17 +73,7 @@ class LoanGeneric:
             }
             logging.debug(f"Sending POST request to Accounts Service with payload: {payload}")
     
-            # Send POST request to Accounts API
-            response = requests.post(f"{ACCOUNTS_SERVICE_URL}/get-all-accounts", json=payload, timeout=5)
-    
-            # Check HTTP status code
-            if response.status_code != 200:
-                logging.error(f"Error in request to Accounts Service: {response.status_code} - {response.text}")
-                return {"approved": False, "message": "Error communicating with Accounts Service."}
-    
-            # Process response
-            accounts = response.json()
-            count = len(accounts)
+            count = len(user_account)
             logging.debug(f"Number of accounts found: {count}")
         except requests.exceptions.RequestException as e:
             logging.error(f"Exception during communication with Accounts Service: {e}")
@@ -94,7 +84,7 @@ class LoanGeneric:
 
 
         logging.debug(f"user account only based on account number search : {user_account}")
-        logging.debug(f"Count whther the email and account exist or not : {count}")
+        logging.debug(f"Count wether the email and account exist or not : {count}")
         if count == 0:
             return {"approved": False, "message": "Email or Account number not found."}
         result = self.__approveLoan(user_account, loan_amount)

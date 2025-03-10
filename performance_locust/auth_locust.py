@@ -9,11 +9,11 @@ from faker import Faker
 fake = Faker()
 
 
-class MyUser(HttpUser):
+class AuthUser(HttpUser):
     host = ApiUrls["VITE_USERS_URL"]
 
     @task
-    class MyUserTasks(SequentialTaskSet):
+    class AuthUserTasks(SequentialTaskSet):
         wait_time = between(2, 3)
 
         def on_start(self):

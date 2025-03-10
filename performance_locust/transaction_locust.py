@@ -6,17 +6,15 @@ from locust import HttpUser, task, SequentialTaskSet, between
 from api_urls import ApiUrls
 import random
 from faker import Faker
-import time
-import json
 
 fake = Faker()
 
 
-class MyUser(HttpUser):
+class TransactionUser(HttpUser):
     host = ApiUrls["VITE_TRANSFER_URL"]
 
     @task
-    class MyUserTasks(SequentialTaskSet):
+    class TransactionUserTasks(SequentialTaskSet):
         wait_time = between(2, 3)
 
         def on_start(self):
@@ -36,7 +34,7 @@ class MyUser(HttpUser):
                 "address": fake.unique.address(),
             }
             self.client.post(
-                f"{accounts_host}/create",
+                f"{accounts_host}/accountcreate",
                 data=self.first_user,
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
@@ -46,14 +44,14 @@ class MyUser(HttpUser):
                 ["Savings", "Money Market", "Investment"]
             )
             self.client.post(
-                f"{accounts_host}/create",
+                f"{accounts_host}/accountcreate",
                 data=self.first_user,
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
 
             # Get all accounts
             response = self.client.post(
-                f"{accounts_host}/allaccounts",
+                f"{accounts_host}/accountallaccounts",
                 data={"email_id": self.first_user["email_id"]},
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
@@ -74,15 +72,15 @@ class MyUser(HttpUser):
                 "address": fake.unique.address(),
             }
             self.client.post(
-                f"{accounts_host}/create",
+                f"{accounts_host}/accountcreate",
                 data=self.second_user,
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
 
-        @task
+        @task(1)
         def internal_transfer(self):
             self.client.post(
-                f"/",
+                f"/transaction",
                 data={
                     "sender_account_number": self.account_numbers[0],
                     "receiver_account_number": self.account_numbers[1],
@@ -92,10 +90,10 @@ class MyUser(HttpUser):
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
 
-        @task
+        @task(1)
         def external_transfer(self):
             self.client.post(
-                f"/zelle/",
+                f"/transactionzelle/",
                 data={
                     "sender_email": self.first_user["email_id"],
                     "receiver_email": self.second_user["email_id"],
@@ -105,10 +103,10 @@ class MyUser(HttpUser):
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
 
-        @task
+        @task(3)
         def transaction_history(self):
             self.client.post(
-                f"/history",
+                f"/transactionhistory",
                 data={"account_number": self.account_numbers[0]},
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )

@@ -6,15 +6,16 @@ from locust import HttpUser, task, SequentialTaskSet, between
 from api_urls import ApiUrls
 import random
 from faker import Faker
+import logging
 
 fake = Faker()
 
 
-class MyUser(HttpUser):
+class LoanUser(HttpUser):
     host = ApiUrls["VITE_LOAN_URL"]
 
     @task
-    class MyUserTasks(SequentialTaskSet):
+    class LoanUserTasks(SequentialTaskSet):
         wait_time = between(2, 3)
 
         def on_start(self):
@@ -35,20 +36,20 @@ class MyUser(HttpUser):
 
             # Create a new account
             self.client.post(
-                f"{account_host}/create",
+                f"{account_host}/accountcreate",
                 data=self.user_data,
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
 
             # Get all accounts
             response = self.client.post(
-                f"{account_host}/allaccounts",
+                f"{account_host}/accountallaccounts",
                 data={"email_id": self.user_data["email_id"]},
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
             self.account_number = response.json()["response"][0]["account_number"]
 
-        @task
+        @task(1)
         def apply(self):
             self.user_data["email"] = self.user_data["email_id"]
             self.user_data["govt_id_type"] = self.user_data["government_id_type"]
@@ -60,15 +61,15 @@ class MyUser(HttpUser):
                 ["Base Camp", "Rover", "Potato Farming", "Ice Home", "Rocker"]
             )
             self.client.post(
-                "/",
+                "/loan",
                 data=self.user_data,
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
 
-        @task
+        @task(2)
         def history(self):
             self.client.post(
-                "/history",
+                "/loanhistory",
                 data={"email": self.user_data["email_id"]},
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
